@@ -9,18 +9,25 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ##Synopsis
-
+This report use the Storm Events data from NOAA which is collect from 1950 to 2011.09 with 37 variables and 902297 recorder. Regarding to the requirment, only 7 variables will be utilized in this report, which are the event type, fatalities, injuries,
+In this report we will analysis the NOAA Storm Events data. The raw data start from year 1950 to November 2011, with 902297 records. Each record contains 37 variables, we picked 7 variables that seemed relevent to our analysis from the dataset. By aggregating the data by storm event type, we ultimately produced bar charts showing the top 6 most significant events in term of fatalities, injuries and economic damage caused. Overall, tornadoes are the most hazardous to human health with 5633 reported fatalities and 91346 reported injuries, and floods have been responsible for the most economic damage ($150+ billion).
 ## Data processing
-```{r data}
+###a.Download data
+```{r data, results='hide'}
 if(!file.exists("data")) {
         dir.create("data")
 }
 
 fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 download.file(fileUrl, destfile = "storm.csv")
-storm<-read.csv("storm.csv")
-head(storm)
-names(storm)
+storm<-read.csv("storm.csv", na.strings = c(""), stringsAsFactors = FALSE)
+
+sapply(storm,function(x) sum(is.na(x)))
+
+```
+###b.check nas for each column
+```{r nas, results='hide'}
+sapply(storm,function(x) sum(is.na(x)))
 
 ```
 
@@ -28,10 +35,51 @@ names(storm)
 
 ###1.Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 
-```{r plots, echo=FALSE}
+```{r health, echo=TRUE}
+#there is no nas in column 8, 23,24..
 health <- storm[,c(8,23,24)]
 health$total <- health$FATALITIES+health$INJURIES
 health.aggr <- aggregate(.~EVTYPE,data = health, sum)
 health.aggr[which.max(health.aggr$total),]
 ```
+####2.Across the United States, which types of events have the greatest economic consequences?
 
+#####a.Replace NAs
+```{r eco, echo=TRUE}
+eco <- storm[,c(8,25,26, 27,28)]
+eco[is.na(eco)]<-0
+sapply(eco, function(x) sum(is.na(x)))
+
+```
+#####b.Change exponent from letter to integer
+```{r exp, echo=TRUE}
+## those values are the multiplier of 10,eg. "-"or"+" stand for 10^1
+unique(eco$PROPDMGEXP)
+unique(eco$CROPDMGEXP)
+
+```
+```{r exp2, echo=TRUE}
+#change the exp to int
+eco[eco=="-" | eco=="+"| eco=="?"] <- 1
+eco[eco=="H" | eco=="h"]<-2
+eco[eco=="k" | eco=="K"]<-3
+eco[eco=="m" | eco=="M"]<-6
+eco[eco=="B" | eco=="b"]<-9
+eco$PROPDMGEXP <- as.integer(eco$PROPDMGEXP)
+eco$CROPDMGEXP <- as.integer(eco$CROPDMGEXP)
+head(eco)
+```
+#####c.Aggregate and Plot 
+```{r a&p, echo=TRUE}
+##aggregate
+str(eco)
+eco$total<- 10^eco$PROPDMGEXP*eco$PROPDMG+10^eco$CROPDMGEXP*eco$CROPDMG
+eco.aggr <- aggregate(.~EVTYPE,data = eco, sum)
+eco.aggr<-eco.aggr[order(eco.aggr$total, decreasing = TRUE),c(1,6)]
+eco.aggr<-head(eco.aggr)
+##plot
+x<-barplot(eco.aggr$total, las=0,xlab = "Event Type", cex.axis = .8, ylab = "Economics damage($)", main = "NOAA TOP 6: Highest Damage(Prop+Crop),1950-2011")
+text(x=x,1,cex=.6, eco.aggr$EVTYPE,xpd="TRUE", srt=45, pos=2)
+
+
+```
