@@ -1,5 +1,5 @@
 ---
-title: "reproducible-research-2"
+title: "Reproducible Research 2: OAA Storm Events Data Analysis Report"
 author: "Xiaolong Li"
 date: "22 January 2017"
 output: html_document
@@ -9,11 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ##Synopsis
-This report use the Storm Events data from NOAA which is collect from 1950 to 2011.09 with 37 variables and 902297 recorder. Regarding to the requirment, only 7 variables will be utilized in this report, which are the event type, fatalities, injuries,
-In this report we will analysis the NOAA Storm Events data. The raw data start from year 1950 to November 2011, with 902297 records. Each record contains 37 variables, we picked 7 variables that seemed relevent to our analysis from the dataset. By aggregating the data by storm event type, we ultimately produced bar charts showing the top 6 most significant events in term of fatalities, injuries and economic damage caused. Overall, tornadoes are the most hazardous to human health with 5633 reported fatalities and 91346 reported injuries, and floods have been responsible for the most economic damage ($150+ billion).
+This report use the Storm Events data from NOAA which is collect from 1950 to 2011.09 with 37 variables and 902297 recorder. Regarding to the requirment, only 7 variables will be utilized in this report. Among these variables, fatalites and injuries reflect the most harmful events to population health and property damage and crop damage show the economic consequences of each events. Overall, Tornado, the most terrible slayer, leads to  5633  fatalities and 91346 injuries repored. And flood is blamed on for the enormous economic damage with more thant 15 billion.
+
 ## Data processing
+
 ###a.Download data
-```{r data, results='hide'}
+```{r data, results='hide', cache=TRUE}
 if(!file.exists("data")) {
         dir.create("data")
 }
@@ -21,12 +22,9 @@ if(!file.exists("data")) {
 fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 download.file(fileUrl, destfile = "storm.csv")
 storm<-read.csv("storm.csv", na.strings = c(""), stringsAsFactors = FALSE)
-
-sapply(storm,function(x) sum(is.na(x)))
-
 ```
-###b.check nas for each column
-```{r nas, results='hide'}
+###b.check NAs for each column
+```{r nas}
 sapply(storm,function(x) sum(is.na(x)))
 
 ```
@@ -42,16 +40,16 @@ health$total <- health$FATALITIES+health$INJURIES
 health.aggr <- aggregate(.~EVTYPE,data = health, sum)
 health.aggr[which.max(health.aggr$total),]
 ```
-####2.Across the United States, which types of events have the greatest economic consequences?
+###2.Across the United States, which types of events have the greatest economic consequences?
 
-#####a.Replace NAs
+####a.Replace NAs with 0
 ```{r eco, echo=TRUE}
 eco <- storm[,c(8,25,26, 27,28)]
 eco[is.na(eco)]<-0
 sapply(eco, function(x) sum(is.na(x)))
 
 ```
-#####b.Change exponent from letter to integer
+####b.Change exponent from letter to integer
 ```{r exp, echo=TRUE}
 ## those values are the multiplier of 10,eg. "-"or"+" stand for 10^1
 unique(eco$PROPDMGEXP)
@@ -69,10 +67,9 @@ eco$PROPDMGEXP <- as.integer(eco$PROPDMGEXP)
 eco$CROPDMGEXP <- as.integer(eco$CROPDMGEXP)
 head(eco)
 ```
-#####c.Aggregate and Plot 
+####c.Aggregate and Plot 
 ```{r a&p, echo=TRUE}
 ##aggregate
-str(eco)
 eco$total<- 10^eco$PROPDMGEXP*eco$PROPDMG+10^eco$CROPDMGEXP*eco$CROPDMG
 eco.aggr <- aggregate(.~EVTYPE,data = eco, sum)
 eco.aggr<-eco.aggr[order(eco.aggr$total, decreasing = TRUE),c(1,6)]
@@ -80,6 +77,7 @@ eco.aggr<-head(eco.aggr)
 ##plot
 x<-barplot(eco.aggr$total, las=0,xlab = "Event Type", cex.axis = .8, ylab = "Economics damage($)", main = "NOAA TOP 6: Highest Damage(Prop+Crop),1950-2011")
 text(x=x,1,cex=.6, eco.aggr$EVTYPE,xpd="TRUE", srt=45, pos=2)
-
-
 ```
+
+##Result
+Tornado are the most harmful event to population health. And Flood has the greatest effect on economics.
