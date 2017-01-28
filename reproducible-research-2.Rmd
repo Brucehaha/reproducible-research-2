@@ -1,0 +1,37 @@
+---
+title: "reproducible-research-2"
+author: "Xiaolong Li"
+date: "22 January 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##Synopsis
+
+## Data processing
+```{r data}
+if(!file.exists("data")) {
+        dir.create("data")
+}
+
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileUrl, destfile = "storm.csv")
+storm<-read.csv("storm.csv")
+head(storm)
+names(storm)
+
+```
+
+##Plots
+
+###1.Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+```{r plots, echo=FALSE}
+health <- storm[,c(8,23,24)]
+health$total <- health$FATALITIES+health$INJURIES
+health.aggr <- aggregate(.~EVTYPE,data = health, sum)
+health.aggr[which.max(health.aggr$total),]
+```
+
